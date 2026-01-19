@@ -9,8 +9,8 @@ def main():
     # Создание симуляции
     simulation = SolarSystemSimulation()
     
-    # Создание окна
-    screen = pygame.display.set_mode((simulation.window_width, simulation.window_height))
+    # Создание окна с поддержкой изменения размера
+    screen = pygame.display.set_mode((simulation.window_width, simulation.window_height), pygame.RESIZABLE)
     pygame.display.set_caption("Solar System Simulator")
     
     # Часы для контроля FPS
@@ -25,6 +25,14 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            elif event.type == pygame.VIDEORESIZE:
+                # Обновление размера окна
+                new_width, new_height = event.size
+                screen = pygame.display.set_mode((new_width, new_height), pygame.RESIZABLE)
+                simulation.window_width = new_width
+                simulation.window_height = new_height
+                # Пересчитываем позиции кнопок при изменении размера
+                simulation.update_button_positions()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:  # Левая кнопка мыши
                     simulation.handle_click(event.pos)

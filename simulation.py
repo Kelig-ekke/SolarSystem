@@ -18,7 +18,8 @@ class SolarSystemSimulation:
         
         # Для плавного масштабирования
         self.target_scale = 1.0
-        self.scale_speed = 0.05
+        self.scale_speed = 8.0  # Скорость анимации масштабирования (выше = быстрее)
+        self.min_scale_diff = 0.001  # Минимальная разница для завершения анимации
         
         self.setup_planets()
         self.setup_ui()
@@ -40,8 +41,8 @@ class SolarSystemSimulation:
             planet = Planet(
                 name=data['name'],
                 orbit_radius=data['orbit_radius'],
-                orbit_speed=data['orbit_speed'],
-                size=data['size'],
+                orbit_speed=data['orbit_speed']/1000,
+                size=data['size']/5000,
                 color=tuple(data['color']),
                 show_orbit=True
             )
@@ -52,37 +53,100 @@ class SolarSystemSimulation:
             self.planets.append(planet)
     
     def setup_ui(self):
+        # Сохраняем базовые размеры для масштабирования
+        self.base_button_width = 100
+        self.base_button_height = 40
+        self.base_small_button_size = 40
+        self.base_planet_button_width = 140
+        self.base_planet_button_height = 40
+        
         # Создаем поверхности для кнопок
         self.buttons = {
-            'start_pause': {'rect': pygame.Rect(10, 10, 100, 40), 'text': 'Пауза'},
-            'slow_down': {'rect': pygame.Rect(120, 10, 40, 40), 'text': '<<'},
-            'speed_up': {'rect': pygame.Rect(170, 10, 40, 40), 'text': '>>'},
-            'zoom_in': {'rect': pygame.Rect(220, 10, 40, 40), 'text': '+'},
-            'zoom_out': {'rect': pygame.Rect(270, 10, 40, 40), 'text': '-'},
-            'reset': {'rect': pygame.Rect(10, self.window_height - 50, 160, 40), 'text': 'Сбросить вид'}
+            'start_pause': {'text': 'Пауза'},
+            'slow_down': {'text': '<<'},
+            'speed_up': {'text': '>>'},
+            'zoom_out': {'text': '-'},
+            'zoom_in': {'text': '+'},
+            'reset': {'text': 'Сбросить вид'}
         }
         
         # Добавляем кнопки для слежения за каждой планетой
-        # x_offset = 40
         for i, planet in enumerate(self.planets):
-            button_width = 110
-            button_height = 40
             self.buttons[f'follow_planet_{i}'] = {
-                'rect': pygame.Rect(10, (self.window_height - 500) + i * 50, button_width, button_height),
                 'text': planet.name,
                 'planet_index': i
             }
+        
+        # Пересчитываем позиции кнопок
+        self.update_button_positions()
+    
+    def update_button_positions(self):
+        """Пересчитывает позиции и размеры кнопок при изменении размера окна"""
+        # Масштабный коэффициент (относительно базового размера 1600x900)
+        scale_x = self.window_width / 1600.0
+        scale_y = self.window_height / 900.0
+        
+        # Масштабируем размеры кнопок
+        btn_width = max(int(self.base_button_width * scale_x), 50)
+        btn_height = max(int(self.base_button_height * scale_y), 30)
+        small_btn = max(int(self.base_small_button_size * scale_x), 30)
+        planet_btn_width = max(int(self.base_planet_button_width * scale_x), 60)
+        planet_btn_height = max(int(self.base_planet_button_height * scale_y), 30)
+        
+        # Подступы
+        margin_x = int(10 * scale_x)
+        margin_y = int(10 * scale_y)
+        
+        # Верхние кнопки
+        x_pos = margin_x
+        y_pos = margin_y
+        
+        self.buttons['start_pause']['rect'] = pygame.Rect(x_pos, y_pos, btn_width, btn_height)
+        x_pos += btn_width + margin_x
+        
+        self.buttons['slow_down']['rect'] = pygame.Rect(x_pos, y_pos, small_btn, btn_height)
+        x_pos += small_btn + margin_x
+        
+        self.buttons['speed_up']['rect'] = pygame.Rect(x_pos, y_pos, small_btn, btn_height)
+        x_pos += small_btn + margin_x
+        
+        self.buttons['zoom_out']['rect'] = pygame.Rect(x_pos, y_pos, small_btn, btn_height)
+        x_pos += small_btn + margin_x
+        
+        self.buttons['zoom_in']['rect'] = pygame.Rect(x_pos, y_pos, small_btn, btn_height)
+        
+        # Кнопка сброса вида - привязана к нижней левой границе
+        # С дополнительным отступом от блока кнопок планет
+        reset_y = self.window_height - planet_btn_height - margin_y
+        self.buttons['reset']['rect'] = pygame.Rect(margin_x, reset_y, planet_btn_width, planet_btn_height)
+        
+        # Кнопки слежения за планетами - привязаны к нижней левой границе
+        button_spacing = planet_btn_height + margin_y // 2
+        for i, planet in enumerate(self.planets):
+            button_key = f'follow_planet_{i}'
+            y_pos = reset_y - button_spacing * (i + 1) - 10*scale_y
+            # Если кнопка выходит за верхнюю границу, не показываем её позицию
+            if y_pos >= margin_y:
+                self.buttons[button_key]['rect'] = pygame.Rect(margin_x, y_pos, planet_btn_width, planet_btn_height)
+            else:
+                # Размещаем за видимой областью
+                self.buttons[button_key]['rect'] = pygame.Rect(margin_x, -planet_btn_height, planet_btn_width, planet_btn_height)
     
     def update(self, delta_time):
-        # Плавное масштабирование
-        if abs(self.scale - self.target_scale) > 0.01:
-            self.scale += (self.target_scale - self.scale) * self.scale_speed
+        # Плавное масштабирование с использованием экспоненциальной интерполяции
+        if abs(self.scale - self.target_scale) > self.min_scale_diff:
+            # Используем экспоненциальное затухание для более гладкого замыкания
+            alpha = 1.0 - pow(0.05, delta_time * self.scale_speed)
+            self.scale += (self.target_scale - self.scale) * alpha
         else:
             self.scale = self.target_scale
         
         if not self.is_paused:
             for planet in self.planets:
                 planet.update(delta_time, self.time_scale)
+        
+        # Пересчитываем позиции кнопок (на случай изменения размера окна)
+        self.update_button_positions()
         
         # Если следим за планетой, центрируем камеру на ней
         if self.follow_planet is not None:
@@ -110,6 +174,10 @@ class SolarSystemSimulation:
         
         # Отображаем информацию
         self.draw_info(screen)
+        
+        # Отображаем информацию о планете при зуме
+        if self.follow_planet is not None:
+            self.draw_planet_info(screen)
         
         # Рисуем кнопки
         self.draw_buttons(screen)
@@ -169,7 +237,15 @@ class SolarSystemSimulation:
                           int(current_sun_radius))
         
     def draw_info(self, screen):
-        font = pygame.font.Font(None, 24)
+        # Масштабируем размер шрифта и позицию текста в зависимости от размера окна
+        scale = self.window_height / 900.0
+        font_size = max(int(24 * scale), 14)
+        font = pygame.font.Font(None, font_size)
+        
+        # Масштабируем отступы
+        margin_x = int(10 * scale)
+        start_y = int(60 * scale)
+        line_spacing = int(30 * scale)
         
         # Информация о скорости и масштабе
         speed_text = f"Скорость: {self.time_scale:.1f}x"
@@ -190,12 +266,70 @@ class SolarSystemSimulation:
         
         for i, text in enumerate(texts):
             rendered = font.render(text, True, (255, 255, 255))
-            screen.blit(rendered, (10, 60 + i * 30))
+            screen.blit(rendered, (margin_x, start_y + i * line_spacing))
+    
+    def draw_planet_info(self, screen):
+        if self.follow_planet is None:
+            return
+        
+        planet = self.planets[self.follow_planet]
+        planet_data = self.planet_data[self.follow_planet]
+        
+        # Масштабируем размер шрифта и отступы
+        scale = self.window_height / 900.0
+        font_size = max(int(28 * scale), 16)
+        font = pygame.font.Font(None, font_size)
+        
+        margin_x = int(20 * scale)
+        line_spacing = int(28 * scale)
+        
+        # Формируем текст информации
+        info_lines = [
+            f"{planet.name}",
+            f"Растояние от Солнца: {planet_data['orbit_radius']} млн км",
+            f"Диаметр: {planet_data['size']} км",
+            f"Скорость движения: {planet_data['orbit_speed']} км/с",
+            f"Продолжительность дня: {planet_data['day']}"
+        ]
+        
+        # Вычисляем размер блока текста
+        rendered_lines = [font.render(line, True, (255, 255, 255)) for line in info_lines]
+        
+        # Находим максимальную ширину текста
+        max_width = max(line.get_width() for line in rendered_lines)
+        
+        # Вычисляем позицию блока (справа, по центру по вертикали)
+        block_width = max_width + margin_x * 2
+        block_height = len(info_lines) * line_spacing + margin_x
+        
+        block_x = self.window_width - block_width - margin_x
+        block_y = (self.window_height - block_height) // 2
+        
+        # Рисуем полупрозрачный фон блока
+        background = pygame.Surface((block_width, block_height))
+        background.set_alpha(200)
+        background.fill((20, 20, 60))
+        screen.blit(background, (block_x, block_y))
+        
+        # Рисуем бордюр блока
+        pygame.draw.rect(screen, (100, 100, 200), (block_x, block_y, block_width, block_height), 2)
+        
+        # Рисуем текст
+        text_x = block_x + margin_x
+        text_y = block_y + margin_x // 2
+        
+        for i, rendered_line in enumerate(rendered_lines):
+            screen.blit(rendered_line, (text_x, text_y + i * line_spacing))
     
     def draw_buttons(self, screen):
-        font = pygame.font.Font(None, 28)
+        # Масштабируем размер шрифта в зависимости от размера окна
+        scale = self.window_height / 900.0
+        font_size = max(int(28 * scale), 16)
+        font = pygame.font.Font(None, font_size)
         
         for name, button in self.buttons.items():
+            if 'rect' not in button:
+                continue
             # Рисуем прямоугольник кнопки
             pygame.draw.rect(screen, (50, 50, 100), button['rect'])
             pygame.draw.rect(screen, (100, 100, 200), button['rect'], 2)
@@ -293,7 +427,7 @@ class SolarSystemSimulation:
                 self.time_scale = speed_levels[0]
 
     def change_zoom(self, plus=True):
-        zoom_levels = [0.5, 1, 2, 5, 8]
+        zoom_levels = [0.01, 0.05, 0.1, 0.5, 1, 2, 5, 8]
 
         if plus:
             for zoom in zoom_levels:

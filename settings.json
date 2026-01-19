@@ -6,58 +6,66 @@
     "planets": [
         { 
             "name": "Меркурий",
-            "orbit_radius": 80,
-            "orbit_speed": 0.04,
-            "size": 4,
+            "orbit_radius": 58,
+            "orbit_speed": 47,
+            "size": 4879,
+            "day": "59 земных суток",
             "color": [169, 169, 169]
         },
         {
             "name": "Венера",
-            "orbit_radius": 120,
-            "orbit_speed": 0.015,
-            "size": 10,
+            "orbit_radius": 108,
+            "orbit_speed": 35,
+            "size": 12100,
+            "day": "243 земных дня",
             "color": [255, 215, 0]
         },
         {
             "name": "Земля",
-            "orbit_radius": 170,
-            "orbit_speed": 0.01,
-            "size": 11,
+            "orbit_radius": 150,
+            "orbit_speed": 30,
+            "size": 12756,
+            "day": "23 часа 56 минут и 4 секунды",
             "color": [0, 100, 255]
         },
         {
             "name": "Марс",
-            "orbit_radius": 220,
-            "orbit_speed": 0.008,
-            "size": 6,
+            "orbit_radius": 228,
+            "orbit_speed": 24,
+            "size": 6792,
+            "day": "24 часа 40 минут",
             "color": [255, 100, 0]
         },
         {
             "name": "Юпитер",
-            "orbit_radius": 320,
-            "orbit_speed": 0.003,
-            "size": 20,
+            "orbit_radius": 775,
+            "orbit_speed": 13,
+            "size": 142984,
+            "day": "9 часов 50 минут",
             "color": [210, 100, 140]
         },
         {
             "name": "Сатурн",
-            "orbit_radius": 420,
-            "orbit_speed": 0.003,
-            "size": 20,
+            "orbit_radius": 1427,
+            "orbit_speed": 9.7,
+            "size": 120420,
+            "day": "10,5 земных часов",
             "color": [232, 180, 95]
         },
         {
             "name": "Уран",
-            "orbit_radius": 520,
-            "orbit_speed": 0.002,
-            "size": 18,
+            "orbit_radius": 2860,
+            "orbit_speed": 6.8,
+            "size": 51300,
+            "day": "17 часов",
             "color": [173, 216, 230]
         },
         {
             "name": "Нептун",
-            "orbit_radius": 620,
-            "orbit_speed": 0.0015,
-            "size": 17,
+            "orbit_radius": 4500,
+            "orbit_speed": 5.4,
+            "size": 49500,
+            "day": "16 часов",
             "color": [0, 0, 200]
         }
     ]

@@ -13,8 +13,8 @@ class Planet:
         self.orbit_points = []
         
     def update(self, delta_time, time_scale):
-        # Обновляем угол вращения
-        self.angle += self.orbit_speed * delta_time * time_scale
+        # Обновляем угол вращения (движение против часовой стрелки)
+        self.angle -= self.orbit_speed * delta_time * time_scale
         
         # Сохраняем точки орбиты для отрисовки
         if self.show_orbit:
