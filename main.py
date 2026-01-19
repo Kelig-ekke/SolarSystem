@@ -36,14 +36,12 @@ def main():
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:  # Левая кнопка мыши
                     simulation.handle_click(event.pos)
+                elif event.button == 4:  # Колесо вверх (масштабирование вверх)
+                    simulation.target_scale = min(simulation.target_scale * 1.1, 5.0)
+                elif event.button == 5:  # Колесо вниз (масштабирование вниз)
+                    simulation.target_scale = max(simulation.target_scale / 1.1, 0.1)
             elif event.type == pygame.KEYDOWN:
                 simulation.handle_keypress(event.key)
-            elif event.type == pygame.MOUSEWHEEL:
-                # Масштабирование колесиком мыши
-                if event.y > 0:
-                    simulation.scale = min(simulation.scale * 1.1, 5.0)
-                else:
-                    simulation.scale = max(simulation.scale / 1.1, 0.1)
         
         # Обновление симуляции
         simulation.update(delta_time)

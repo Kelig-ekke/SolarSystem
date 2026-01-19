@@ -1,6 +1,8 @@
 import json
 import pygame
 import math
+import os
+import sys
 from planet import Planet
 
 class SolarSystemSimulation:
@@ -25,7 +27,26 @@ class SolarSystemSimulation:
         self.setup_ui()
     
     def load_settings(self, settings_file):
-        with open(settings_file, 'r', encoding='utf-8') as f:
+        # Найти settings.json в правильной директории
+        # Для PyInstaller: проверяем sys._MEIPASS (временная папка)
+        # Для обычного запуска: проверяем текущую директорию
+        
+        possible_paths = [
+            settings_file,  # Текущая директория
+            os.path.join(os.path.dirname(__file__), settings_file),  # Рядом с скриптом
+            os.path.join(sys._MEIPASS, settings_file) if hasattr(sys, '_MEIPASS') else None,  # PyInstaller
+        ]
+        
+        settings_path = None
+        for path in possible_paths:
+            if path and os.path.exists(path):
+                settings_path = path
+                break
+        
+        if not settings_path:
+            raise FileNotFoundError(f"settings.json не найден. Проверьте, что файл находится в папке с программой.")
+        
+        with open(settings_path, 'r', encoding='utf-8') as f:
             settings = json.load(f)
         
         self.window_width = settings['window_width']
